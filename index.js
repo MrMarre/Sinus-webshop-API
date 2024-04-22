@@ -7,3 +7,5 @@ app.use(express.json());
 app.listen(PORT, () => {
   console.log("Servern har startat");
 });
+
+app.get;
