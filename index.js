@@ -53,7 +53,6 @@ app.get("/cart", (req, res) => {
   const cartProducts = shoppingCart.map((productId) => {
     const product = checkIfProductExists(productId);
     if (!product) {
-      res.json({ error: "The contents of the cart is empty" });
       return null;
     }
     return {
@@ -66,7 +65,34 @@ app.get("/cart", (req, res) => {
 
   const validCartProducts = cartProducts.filter((product) => product);
 
+  if (validCartProducts.length === 0) {
+    return res.json({ error: "The contents of the cart is empty" });
+  }
+
   res.json(validCartProducts);
+});
+
+app.post("/order", (req, res) => {
+  if (shoppingCart.length === 0) {
+    return res.status(400).json({ error: "Shopping cart is currently empty" });
+  }
+  const orderDetails = {
+    products: shoppingCart.map((productId) => {
+      const product = checkIfProductExists(productId);
+      return {
+        title: product.title,
+        price: product.price,
+        shortDesc: product.shortDesc,
+        serial: product.serial,
+      };
+    }),
+  };
+
+  shoppingCart = [];
+
+  res
+    .status(201)
+    .json({ message: "Order placed successfully", order: orderDetails });
 });
 
 // Kunna lägga en order med alla producter från varukorgen
