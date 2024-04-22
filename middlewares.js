@@ -3,7 +3,7 @@ const products = require("./products.json");
 function validateProduct(req, res, next) {
   const { title, price, shortDesc, imgFile } = req.body;
 
-  if (!title || !price || !shortDesc || imgFile) {
+  if (!title || !price || !shortDesc || !imgFile) {
     return res.status(400).json({ error: "Missing required fields" });
   }
   next();
