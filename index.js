@@ -1,6 +1,7 @@
 const express = require("express");
 const products = require("./products.json");
 const { validateProduct, checkIfProductExists } = require("./middlewares");
+const fs = require("fs");
 
 const app = express();
 const PORT = 8000;
@@ -22,9 +23,9 @@ app.get("/products", (req, res) => {
 });
 
 // Kunna lägga till en product i en varukorg
-app.post("/cart/add/:productId", async (req, res) => {
+app.post("/cart/add/:productId", (req, res) => {
   const productId = req.params.productId;
-  const product = await checkIfProductExists(productId);
+  const product = checkIfProductExists(productId);
 
   if (!product) {
     return res.status(400).json({ error: "Product not found" });
@@ -37,7 +38,7 @@ app.post("/cart/add/:productId", async (req, res) => {
 });
 
 // Kunna ta bort en product i en varukorg
-app.delete("/cart/add/:productId", (req, res) => {
+app.delete("/cart/remove/:productId", (req, res) => {
   const productId = req.params.productId;
   const index = shoppingCart.indexOf(productId);
 
@@ -94,11 +95,59 @@ app.post("/order", (req, res) => {
     .status(201)
     .json({ message: "Order placed successfully", order: orderDetails });
 });
+// För admin att addera ny product, saknas givetvis massa checks, kan brytas ut till mer middleware, FÖRSTÅS!
+app.post("/product", validateProduct, (req, res) => {
+  const { title, price, category, shortDesc, longDesc, imgFile, serial } =
+    req.body;
+
+  const newProduct = {
+    title,
+    price,
+    category,
+    shortDesc,
+    longDesc,
+    imgFile,
+    serial,
+  };
+
+  fs.readFile("products.json", "utf-8", (err, data) => {
+    if (err) {
+      console.error("Error reading file", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    let products = [];
+    try {
+      products = JSON.parse(data);
+    } catch (error) {
+      console.error("Error parsing JSON:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    products.push(newProduct);
+
+    const updatedData = JSON.stringify(products, null, 2);
+
+    fs.writeFile("products.json", updatedData, (err) => {
+      if (err) {
+        console.error("Error writing file:", err);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
+    res
+      .status(201)
+      .json({ message: "Product created successfully", product: newProduct });
+  });
+});
 
 // Kunna lägga en order med alla producter från varukorgen
 
 app.use((req, res, next) => {
   res.status(404).json({ error: "No endpoint found" });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 app.listen(PORT, () => {
